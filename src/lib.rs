@@ -21,7 +21,7 @@
 //! use sg_image_reader::{SgFile, VecImageBuilderFactory};
 //!
 //! // Load just the metadata
-//! let sg_file = SgFile::load_metadata_from_path(path)?;
+//! let sg_file = SgFile::load_from_path(path)?;
 //!
 //! // Select the image we want to load pixel data for
 //! let image = &sg_file.images[11];

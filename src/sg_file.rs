@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 /// Metadata of a sg file.
 ///
 /// Contains metadata of the images retrieved from the sg file.
-/// Can be used to get information about the bitmaps and images this file describes.
+/// Can be used to get information about the albums and images this file describes.
 ///
 /// Some bytes from the metadata are of unknown meaning.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -20,36 +20,36 @@ pub struct SgFile {
     pub version: u32,
     pub unknown: u32,
     pub max_image_count: u32,
-    pub bitmap_records_without_system: u32,
+    pub album_records_without_system: u32,
     pub total_file_size: u32,
     pub file_size_555: u32,
     pub file_size_external: u32,
-    pub bitmaps: Vec<SgAlbum>,
+    pub albums: Vec<SgAlbum>,
     pub images: Vec<SgImageMetadata>,
 }
 
 impl SgFile {
     /// Load metadata from provided reader
-    pub fn load_metadata_from_reader<R: Read + Seek>(reader: &mut BufReader<R>, folder: String, filename: String) -> Result<Self> {
+    pub fn load_from_reader<R: Read + Seek>(reader: &mut BufReader<R>, folder: String, filename: String) -> Result<Self> {
         let file_size = reader.read_u32_le()?;
         let version = reader.read_u32_le()?;
 
         let unknown = reader.read_u32_le()?;
         let max_image_count = reader.read_u32_le()?;
         let image_count = reader.read_u32_le()?;
-        let bitmap_count = reader.read_u32_le()?;
-        let bitmap_records_without_system = reader.read_u32_le()?;
+        let albums_count = reader.read_u32_le()?;
+        let album_records_without_system = reader.read_u32_le()?;
         let total_file_size = reader.read_u32_le()?;
         let file_size_555 = reader.read_u32_le()?;
         let file_size_external = reader.read_u32_le()?;
 
-        let max_bitmaps_records: u32 = if version == 0xd3 { 100 } else { 200 };
+        let max_album_records: u32 = if version == 0xd3 { 100 } else { 200 };
 
         reader.seek_relative(640)?;
 
-        let bitmaps = Self::load_bitmaps_metadata(reader, bitmap_count)?;
+        let albums = Self::load_albums(reader, albums_count)?;
 
-        reader.seek_relative(200 * (max_bitmaps_records - bitmap_count) as i64)?;
+        reader.seek_relative(200 * (max_album_records - albums_count) as i64)?;
 
         let images = Self::load_images_metadata(reader, image_count, version >= 0xd6)?;
 
@@ -64,11 +64,11 @@ impl SgFile {
             version,
             unknown,
             max_image_count,
-            bitmap_records_without_system,
+            album_records_without_system,
             total_file_size,
             file_size_555,
             file_size_external,
-            bitmaps,
+            albums,
             images,
         };
 
@@ -76,19 +76,19 @@ impl SgFile {
     }
 
     /// Load metadata from the file founds on the given path.
-    pub fn load_metadata_from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn load_from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = File::open(path.as_ref())?;
         let mut reader = BufReader::new(file);
 
         let folder = String::from(path.as_ref().parent().unwrap().to_str().unwrap());
         let filename = String::from(path.as_ref().file_name().unwrap().to_str().unwrap());
 
-        Self::load_metadata_from_reader(&mut reader, folder, filename)
+        Self::load_from_reader(&mut reader, folder, filename)
     }
 
     /// Load metadata and pixel data.
     pub fn load_fully<P: AsRef<Path>, T, F: ImageBuilderFactory<T>>(path: P, image_builder_factory: &F) -> Result<(Self, Vec<T>)> {
-        let sg_file = Self::load_metadata_from_path(path)?;
+        let sg_file = Self::load_from_path(path)?;
 
         let images = sg_file.load_image_data(image_builder_factory)?;
 
@@ -109,12 +109,12 @@ impl SgFile {
         Ok(())
     }
 
-    fn load_bitmaps_metadata<R: Read + Seek>(reader: &mut BufReader<R>, bitmap_records: u32) -> Result<Vec<SgAlbum>> {
-        let mut bitmaps = Vec::with_capacity(bitmap_records as usize);
-        for i in 0..bitmap_records {
-            bitmaps.push(SgAlbum::load(reader, i)?);
+    fn load_albums<R: Read + Seek>(reader: &mut BufReader<R>, albums_count: u32) -> Result<Vec<SgAlbum>> {
+        let mut albums = Vec::with_capacity(albums_count as usize);
+        for i in 0..albums_count {
+            albums.push(SgAlbum::load(reader, i)?);
         }
-        Ok(bitmaps)
+        Ok(albums)
     }
 
     fn load_images_metadata<R: Read + Seek>(file: &mut BufReader<R>, image_records: u32, alpha: bool) -> Result<Vec<SgImageMetadata>> {
@@ -162,10 +162,10 @@ impl SgFile {
         Ok(result)
     }
 
-    /// Get path to the file containing pixel data for the given bitmap.
-    pub fn get_555_file_path(&self, bitmap_id: usize, is_external: bool) -> PathBuf {
+    /// Get path to the file containing pixel data for the given album.
+    pub fn get_555_file_path(&self, album_id: usize, is_external: bool) -> PathBuf {
         let basename = if is_external {
-            &self.bitmaps[bitmap_id].external_filename
+            &self.albums[album_id].external_filename
         } else {
             &self.filename
         };

@@ -19,13 +19,13 @@ It is also possible to construct the required images directly by implementing th
 Pixel data can also be loaded for one image at a time, see `viewer` example for an example of that
 ```rust
 // Load just the metadata
-let sg_file = SgFileMetadata::load_metadata(path)?;
+let sg_file = SgFileMetadata::load(path)?;
 
 // Image we want to load pixel data for
 let image = &sg_file.images[11];
 
 // Get the path of the file where that data is located
-let path = sg_file.get_555_file_path(image.bitmap_id as usize, image.is_external());
+let path = sg_file.get_555_file_path(image.album_id as usize, image.is_external());
 
 // Create a new reader
 let mut buf_reader = BufReader::new(File::open(path)?);

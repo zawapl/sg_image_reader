@@ -59,7 +59,7 @@ fn build_app() -> impl Widget<AppData> {
                 |image_id| {
                     if let Some(LoadedFile(file)) = &data.loaded_file {
                         let image = &file.images[image_id];
-                        let album = &file.bitmaps[image.album_id as usize];
+                        let album = &file.albums[image.album_id as usize];
 
                         let mut labels = Flex::column();
                         let mut values = Flex::column();
@@ -119,7 +119,7 @@ fn build_app() -> impl Widget<AppData> {
                         add_row("version", format!("{:?}", file.version));
                         add_row("unknown", format!("{:?}", file.unknown));
                         add_row("max_image_count", format!("{:?}", file.max_image_count));
-                        add_row("bitmap_records_without_system", format!("{:?}", file.bitmap_records_without_system));
+                        add_row("album_records_without_system", format!("{:?}", file.album_records_without_system));
                         add_row("total_file_size", format!("{:?}", file.total_file_size));
                         add_row("file_size_555", format!("{:?}", file.file_size_555));
                         add_row("file_size_external", format!("{:?}", file.file_size_external));
@@ -165,7 +165,7 @@ fn build_app() -> impl Widget<AppData> {
 impl AppDelegate<AppData> for Delegate {
     fn command(&mut self, _ctx: &mut DelegateCtx, _target: Target, cmd: &Command, data: &mut AppData, _env: &Env) -> Handled {
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
-            match SgFile::load_metadata_from_path(file_info.path()) {
+            match SgFile::load_from_path(file_info.path()) {
                 Ok(sg_file) => {
                     data.images.clear();
 

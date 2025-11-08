@@ -3,9 +3,9 @@ use crate::utils::ReadHelper;
 use std::io::{BufReader, Read, Seek};
 use std::string::String;
 
-/// Metadata of a bitmap.
+/// Metadata of an album.
 ///
-/// In this context a bitmap is a group of images sharing the same file containing their pixel data.
+/// In this context it's a group of images sharing the same file containing their pixel data.
 ///
 /// Some bytes from the metadata are of unknown meaning.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -52,7 +52,7 @@ impl SgAlbum {
         let file_size_external = reader.read_u32_le()?;
         let unknown_e = reader.read_bytes()?;
 
-        let sg_bitmap_metadata = SgAlbum {
+        Ok(SgAlbum {
             id,
             external_filename,
             comment,
@@ -72,8 +72,6 @@ impl SgAlbum {
             total_file_size,
             file_size_external,
             unknown_e,
-        };
-
-        Ok(sg_bitmap_metadata)
+        })
     }
 }

@@ -1,5 +1,5 @@
-use crate::image_builder::{ImageBuilder, ImageBuilderFactory, ImageBuilderHelper};
 use crate::Result;
+use crate::image_builder::{ImageBuilder, ImageBuilderFactory};
 use crate::{ReadHelper, SgImageError};
 use std::io::BufReader;
 use std::io::{Read, Seek};
@@ -36,7 +36,7 @@ pub struct SgImageMetadata {
     pub unknown_d: u8,
     pub image_type: u16,
     pub flags: [u8; 4],
-    pub bitmap_id: u8,
+    pub album_id: u8,
     pub unknown_e: u8,
     pub anim_speed_id: u8,
     pub unknown_f: [u8; 5],
@@ -63,22 +63,24 @@ impl SgImageMetadata {
         let unknown_d = reader.read_u8()?;
         let image_type = reader.read_u16_le()?;
         let flags = reader.read_bytes()?;
-        let bitmap_id = reader.read_u8()?;
+        let album_id = reader.read_u8()?;
         let unknown_e = reader.read_u8()?;
         let anim_speed_id = reader.read_u8()?;
         let unknown_f = reader.read_bytes()?;
+
         let alpha_offset = if include_alpha {
             reader.read_u32_le()?
         } else {
             0
         };
+
         let alpha_length = if include_alpha {
             reader.read_u32_le()?
         } else {
             0
         };
 
-        let sg_image = SgImageMetadata {
+        return Ok(SgImageMetadata {
             id,
             offset,
             length,
@@ -97,15 +99,13 @@ impl SgImageMetadata {
             unknown_d,
             image_type,
             flags,
-            bitmap_id,
+            album_id,
             unknown_e,
             anim_speed_id,
             unknown_f,
             alpha_offset,
             alpha_length,
-        };
-
-        Ok(sg_image)
+        });
     }
 
     /// Checks if the image is flagged as having its data in an external file.
@@ -155,7 +155,7 @@ impl SgImageMetadata {
 
         for position in 0..(self.length as usize) / 2 {
             let colour = reader.read_u16_le()?;
-            image_builder.set_555_pixel_by_pos(position, colour);
+            Self::set_555_pixel_by_pos(image_builder, position, colour);
         }
 
         Ok(())
@@ -253,7 +253,7 @@ impl SgImageMetadata {
             position += x_start;
             for _x in x_start..x_end {
                 let c = reader.read_u16_le()?;
-                image_builder.set_555_pixel_by_pos(position, c);
+                Self::set_555_pixel_by_pos(image_builder, position, c);
                 position += 1;
             }
             position += x_start + skip;
@@ -263,7 +263,7 @@ impl SgImageMetadata {
             position += x_start;
             for _x in x_start..x_end {
                 let c = reader.read_u16_le()?;
-                image_builder.set_555_pixel_by_pos(position, c);
+                Self::set_555_pixel_by_pos(image_builder, position, c);
                 position += 1;
             }
             position += x_start + skip;
@@ -298,7 +298,7 @@ impl SgImageMetadata {
                 // Pixels to fill in
                 for _j in 0..c {
                     let pixel = reader.read_u16_le()?;
-                    image_builder.set_555_pixel_by_pos(pos, pixel);
+                    Self::set_555_pixel_by_pos(image_builder, pos, pixel);
                     pos += 1;
                 }
             }
@@ -331,4 +331,20 @@ impl SgImageMetadata {
 
         Ok(())
     }
+
+    fn set_555_pixel_by_pos<T, B: ImageBuilder<T>>(builder: &mut B, position: usize, colour: u16) {
+        if colour == 0xf81f {
+            return;
+        }
+
+        let ones = 0xf8_u8;
+        let r = (colour >> 7) as u8 & ones;
+        let g = (colour >> 2) as u8 & ones;
+        let b = (colour << 3) as u8 & ones;
+
+        let data = [r, g, b, 0xff];
+
+        builder.set_pixel_by_pos(position, data);
+    }
+
 }

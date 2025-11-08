@@ -11,7 +11,7 @@ pub trait ReadHelper {
 
     fn read_i32_le(&mut self) -> Result<i32>;
 
-    fn read_utf(&mut self, length: usize) -> Result<String>;
+    fn read_string(&mut self, length: usize) -> Result<String>;
 
     fn read_bytes<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH]>
     where
@@ -43,13 +43,13 @@ impl<R: Read> ReadHelper for R {
         Ok(i32::from_le_bytes(tmp))
     }
 
-    fn read_utf(&mut self, length: usize) -> Result<String> {
-        let mut tmp = vec![0; length];
+    fn read_string(&mut self, max_length: usize) -> Result<String> {
+        let mut tmp = vec![0; max_length];
 
         self.read_exact(&mut tmp)?;
 
         return match str::from_utf8(&tmp) {
-            Ok(str) => Ok(String::from(str.trim_end_matches(char::from(0)))),
+            Ok(str) => Ok(String::from(str.split(char::from(0)).nth(0).unwrap())),
             Err(err) => Err(SgImageError::Utf8Error(err)),
         };
     }

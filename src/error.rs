@@ -16,13 +16,12 @@ pub enum SgImageError {
 impl Display for SgImageError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            SgImageError::InvalidHeader => write!(f, "invalid header enountered"),
+            SgImageError::InvalidHeader => write!(f, "invalid header encountered"),
             SgImageError::ImageDataLengthMismatch => write!(f, "data length mismatch detected"),
             SgImageError::UnknownImageType(_) => write!(f, "unknown image type encountered"),
-            SgImageError::IoError(err) => write!(f, "IO error enountered: {}", err),
-            SgImageError::Utf8Error(_) => write!(f, "error enountered when reading UTF8 srting"),
+            SgImageError::IoError(err) => write!(f, "IO error encountered: {}", err),
+            SgImageError::Utf8Error(_) => write!(f, "error encountered when reading UTF8 string"),
         }
-        
     }
 }
 

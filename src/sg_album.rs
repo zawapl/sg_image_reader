@@ -1,5 +1,5 @@
-use crate::utils::ReadHelper;
 use crate::Result;
+use crate::utils::ReadHelper;
 use std::io::{BufReader, Read, Seek};
 use std::string::String;
 
@@ -9,7 +9,7 @@ use std::string::String;
 ///
 /// Some bytes from the metadata are of unknown meaning.
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct SgBitmapMetadata {
+pub struct SgAlbum {
     pub id: u32,
     pub external_filename: String,
     pub comment: String,
@@ -31,10 +31,10 @@ pub struct SgBitmapMetadata {
     pub unknown_e: [u8; 24],     // 24 unknown bytes
 }
 
-impl SgBitmapMetadata {
-    pub(crate) fn load<R: Read + Seek>(reader: &mut BufReader<R>, id: u32) -> Result<SgBitmapMetadata> {
-        let external_filename = reader.read_utf(65)?;
-        let comment = reader.read_utf(51)?;
+impl SgAlbum {
+    pub(crate) fn load<R: Read + Seek>(reader: &mut BufReader<R>, id: u32) -> Result<SgAlbum> {
+        let external_filename = reader.read_string(65)?;
+        let comment = reader.read_string(51)?;
         let width = reader.read_u32_le()?;
         let height = reader.read_u32_le()?;
         let num_images = reader.read_u32_le()?;
@@ -52,7 +52,7 @@ impl SgBitmapMetadata {
         let file_size_external = reader.read_u32_le()?;
         let unknown_e = reader.read_bytes()?;
 
-        let sg_bitmap_metadata = SgBitmapMetadata {
+        let sg_bitmap_metadata = SgAlbum {
             id,
             external_filename,
             comment,

@@ -4,7 +4,7 @@ extern crate piet_common;
 use druid::im::Vector;
 use druid::widget::{Button, Container, Flex, Image, Label, List, Scroll, Split, ViewSwitcher};
 use druid::*;
-use sg_image_reader::{SgFileMetadata, VecImageBuilderFactory};
+use sg_image_reader::{SgFile, VecImageBuilderFactory};
 use std::fs::File;
 use std::io::BufReader;
 use std::vec::Vec;
@@ -12,7 +12,7 @@ use std::vec::Vec;
 use crate::piet::ImageFormat;
 
 #[derive(Clone)]
-struct LoadedFile(SgFileMetadata);
+struct LoadedFile(SgFile);
 
 #[derive(Clone, Data, Lens, Default)]
 struct AppData {
@@ -31,10 +31,10 @@ fn build_app() -> impl Widget<AppData> {
     // Create the button to open a filk
     let open_dialog_options = FileDialogOptions::new().allowed_types(vec![FileSpec::new("SG3", &["sg3"])]);
 
-    let left = Flex::column()
+    let images = Flex::column()
         .with_child(
             Button::new("Open file")
-                .on_click(move |ctx, _, _| ctx.submit_command(Command::new(druid::commands::SHOW_OPEN_PANEL, open_dialog_options.clone(), Target::Auto)))
+                .on_click(move |ctx, _, _| ctx.submit_command(Command::new(commands::SHOW_OPEN_PANEL, open_dialog_options.clone(), Target::Auto)))
                 .expand_width(),
         )
         .with_default_spacer()
@@ -51,7 +51,7 @@ fn build_app() -> impl Widget<AppData> {
         );
 
     // Table with image details
-    let table = ViewSwitcher::new(
+    let metadata = ViewSwitcher::new(
         |data: &AppData, _env| data.current_image,
         move |current_image, data: &AppData, _env| {
             Box::new(current_image.map_or_else(
@@ -59,7 +59,7 @@ fn build_app() -> impl Widget<AppData> {
                 |image_id| {
                     if let Some(LoadedFile(file)) = &data.loaded_file {
                         let image = &file.images[image_id];
-                        let bitmap = &file.bitmaps[image.bitmap_id as usize];
+                        let album = &file.bitmaps[image.album_id as usize];
 
                         let mut labels = Flex::column();
                         let mut values = Flex::column();
@@ -69,6 +69,7 @@ fn build_app() -> impl Widget<AppData> {
                             values.add_child(Label::new(value).expand_width());
                         };
 
+                        add_row("File", "".to_string());
                         add_row("image id", format!("{:?}", image.id));
                         add_row("offset", format!("{:?}", image.offset));
                         add_row("length", format!("{:?}", image.length));
@@ -92,27 +93,27 @@ fn build_app() -> impl Widget<AppData> {
                         add_row("unknown_d", format!("{:?}", image.unknown_d));
                         add_row("unknown_e", format!("{:?}", image.unknown_e));
                         add_row("unknown_f", format!("{:?}", image.unknown_f));
-                        add_row("", " ".to_string());
-                        add_row("bitmap_id", format!("{:?}", bitmap.id));
-                        add_row("external_filename", format!("{:?}", bitmap.external_filename));
-                        add_row("comment", format!("{:?}", bitmap.comment));
-                        add_row("width", format!("{:?}", bitmap.width));
-                        add_row("height", format!("{:?}", bitmap.height));
-                        add_row("num_images", format!("{:?}", bitmap.num_images));
-                        add_row("start_index", format!("{:?}", bitmap.start_index));
-                        add_row("end_index", format!("{:?}", bitmap.end_index));
-                        add_row("image_width", format!("{:?}", bitmap.image_width));
-                        add_row("image_height", format!("{:?}", bitmap.image_height));
-                        add_row("file_size_555", format!("{:?}", bitmap.file_size_555));
-                        add_row("total_file_size", format!("{:?}", bitmap.total_file_size));
-                        add_row("file_size_external", format!("{:?}", bitmap.file_size_external));
-                        add_row("image_id", format!("{:?}", bitmap.image_id));
-                        add_row("unknown_a", format!("{:?}", bitmap.unknown_a));
-                        add_row("unknown_b", format!("{:?}", bitmap.unknown_b));
-                        add_row("unknown_c", format!("{:?}", bitmap.unknown_c));
-                        add_row("unknown_d", format!("{:?}", bitmap.unknown_d));
-                        add_row("unknown_e", format!("{:?}", bitmap.unknown_e));
-                        add_row("", " ".to_string());
+                        add_row("Album", "".to_string());
+                        add_row("album_id", format!("{:?}", album.id));
+                        add_row("external_filename", format!("{:?}", album.external_filename));
+                        add_row("comment", format!("{:?}", album.comment));
+                        add_row("width", format!("{:?}", album.width));
+                        add_row("height", format!("{:?}", album.height));
+                        add_row("num_images", format!("{:?}", album.num_images));
+                        add_row("start_index", format!("{:?}", album.start_index));
+                        add_row("end_index", format!("{:?}", album.end_index));
+                        add_row("image_width", format!("{:?}", album.image_width));
+                        add_row("image_height", format!("{:?}", album.image_height));
+                        add_row("file_size_555", format!("{:?}", album.file_size_555));
+                        add_row("total_file_size", format!("{:?}", album.total_file_size));
+                        add_row("file_size_external", format!("{:?}", album.file_size_external));
+                        add_row("image_id", format!("{:?}", album.image_id));
+                        add_row("unknown_a", format!("{:?}", album.unknown_a));
+                        add_row("unknown_b", format!("{:?}", album.unknown_b));
+                        add_row("unknown_c", format!("{:?}", album.unknown_c));
+                        add_row("unknown_d", format!("{:?}", album.unknown_d));
+                        add_row("unknown_e", format!("{:?}", album.unknown_e));
+                        add_row("File", "".to_string());
                         add_row("filename", format!("{:?}", file.filename));
                         add_row("file_size", format!("{:?}", file.file_size));
                         add_row("version", format!("{:?}", file.version));
@@ -132,7 +133,7 @@ fn build_app() -> impl Widget<AppData> {
     );
 
     // Show selected image
-    let image_widget = ViewSwitcher::new(
+    let image_preview = ViewSwitcher::new(
         |data: &AppData, _env| data.current_image,
         move |current_image, data: &AppData, _env| {
             Box::new(current_image.map_or_else(
@@ -156,15 +157,15 @@ fn build_app() -> impl Widget<AppData> {
         },
     );
 
-    let right = Split::columns(image_widget, table).split_point(0.9).bar_size(5.0).draggable(true).min_size(10.0, 300.0);
+    let right = Split::columns(image_preview, metadata).split_point(0.9).bar_size(5.0).draggable(true).min_size(10.0, 300.0);
 
-    Container::new(Split::columns(left, right).split_point(0.1).bar_size(5.0).draggable(true).min_size(200.0, 200.0))
+    Container::new(Split::columns(images, right).split_point(0.1).bar_size(5.0).draggable(true).min_size(200.0, 200.0))
 }
 
 impl AppDelegate<AppData> for Delegate {
     fn command(&mut self, _ctx: &mut DelegateCtx, _target: Target, cmd: &Command, data: &mut AppData, _env: &Env) -> Handled {
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
-            match SgFileMetadata::load_metadata_from_path(file_info.path()) {
+            match SgFile::load_metadata_from_path(file_info.path()) {
                 Ok(sg_file) => {
                     data.images.clear();
 
@@ -173,9 +174,9 @@ impl AppDelegate<AppData> for Delegate {
                         data.images.push_back((sg_image.id, label));
                     }
 
-                    data.loaded_file = Option::Some(LoadedFile(sg_file));
+                    data.loaded_file = Some(LoadedFile(sg_file));
                     data.title = String::from(file_info.path().as_os_str().to_str().unwrap());
-                    data.current_image = Option::None;
+                    data.current_image = None;
                 }
                 Err(e) => {
                     println!("Error opening file: {e:?}");
@@ -187,10 +188,10 @@ impl AppDelegate<AppData> for Delegate {
         if let Some(image_id) = cmd.get(SELECT_IMAGE) {
             if let Some(LoadedFile(file)) = &data.loaded_file {
                 let image = &file.images[*image_id as usize];
-                let path = file.get_555_file_path(image.bitmap_id as usize, image.is_external());
+                let path = file.get_555_file_path(image.album_id as usize, image.is_external());
                 let mut reader = BufReader::new(File::open(path).expect("Failed to open file."));
                 let pixels = image.load_image(&mut reader, &VecImageBuilderFactory).expect("Failed to get pixel data.");
-                data.current_image = Option::Some(*image_id as usize);
+                data.current_image = Some(*image_id as usize);
                 data.pixels = Vector::from(pixels);
                 return Handled::Yes;
             }

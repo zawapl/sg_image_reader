@@ -1,7 +1,7 @@
-use image::ColorType;
-use sg_image_reader::{SgFileMetadata, VecImageBuilderFactory};
+use image::{ColorType, save_buffer};
+use sg_image_reader::{SgFile, VecImageBuilderFactory};
 use std::fs;
-use std::io::{stdin, Error, ErrorKind, Result};
+use std::io::{Error, ErrorKind, Result, stdin};
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -28,7 +28,7 @@ fn run() -> Result<()> {
                 path_buf.push(dir.file_name());
                 fs::create_dir_all(path_buf.clone())?;
 
-                match SgFileMetadata::load_fully(dir.path(), &VecImageBuilderFactory) {
+                match SgFile::load_fully(dir.path(), &VecImageBuilderFactory) {
                     Err(err) => println!("Failed to load: {err:?}"),
                     Ok((sg_file, pixels)) => {
                         for i in 0..pixels.len() {
@@ -44,7 +44,7 @@ fn run() -> Result<()> {
                             file_path.push(format!("{i}"));
                             file_path.set_extension("png");
 
-                            let result = image::save_buffer(file_path, &pixels[i], width, height, ColorType::Rgba8);
+                            let result = save_buffer(file_path, &pixels[i], width, height, ColorType::Rgba8);
                             result.map_err(|err| Error::new(ErrorKind::Other, err.to_string()))?;
                         }
                     }

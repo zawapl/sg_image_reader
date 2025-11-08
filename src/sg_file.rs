@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 ///
 /// Some bytes from the metadata are of unknown meaning.
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct SgFileMetadata {
+pub struct SgFile {
     pub folder: String,
     pub filename: String,
     pub file_size: u32,
@@ -24,11 +24,11 @@ pub struct SgFileMetadata {
     pub total_file_size: u32,
     pub file_size_555: u32,
     pub file_size_external: u32,
-    pub bitmaps: Vec<SgBitmapMetadata>,
+    pub bitmaps: Vec<SgAlbum>,
     pub images: Vec<SgImageMetadata>,
 }
 
-impl SgFileMetadata {
+impl SgFile {
     /// Load metadata from provided reader
     pub fn load_metadata_from_reader<R: Read + Seek>(reader: &mut BufReader<R>, folder: String, filename: String) -> Result<Self> {
         let file_size = reader.read_u32_le()?;
@@ -57,7 +57,7 @@ impl SgFileMetadata {
 
         Self::validate_header(&version, &file_size, &reader.stream_position()?)?;
 
-        let sg_file = SgFileMetadata {
+        let sg_file = SgFile {
             folder,
             filename,
             file_size,
@@ -109,10 +109,10 @@ impl SgFileMetadata {
         Ok(())
     }
 
-    fn load_bitmaps_metadata<R: Read + Seek>(reader: &mut BufReader<R>, bitmap_records: u32) -> Result<Vec<SgBitmapMetadata>> {
+    fn load_bitmaps_metadata<R: Read + Seek>(reader: &mut BufReader<R>, bitmap_records: u32) -> Result<Vec<SgAlbum>> {
         let mut bitmaps = Vec::with_capacity(bitmap_records as usize);
         for i in 0..bitmap_records {
-            bitmaps.push(SgBitmapMetadata::load(reader, i)?);
+            bitmaps.push(SgAlbum::load(reader, i)?);
         }
         Ok(bitmaps)
     }
@@ -148,7 +148,7 @@ impl SgFileMetadata {
 
         for i in 0..self.images.len() {
             let image = &self.images[i];
-            let file_params = (image.bitmap_id as usize, image.is_external());
+            let file_params = (image.album_id as usize, image.is_external());
 
             if last_file_params != file_params {
                 let path = self.get_555_file_path(file_params.0, file_params.1);

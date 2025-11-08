@@ -1,6 +1,6 @@
-use sg_image_reader::{SgFileMetadata, VecImageBuilderFactory};
+use sg_image_reader::{SgFile, VecImageBuilderFactory};
 use std::fs;
-use std::io::{stdin, Result};
+use std::io::{Result, stdin};
 use std::time::Instant;
 
 fn run() -> Result<()> {
@@ -17,7 +17,7 @@ fn run() -> Result<()> {
             if dir.path().as_path().extension().map_or_else(|| false, |ext| ext.eq("sg3")) {
                 println!("Verifying {:?}", dir.path());
                 let start = Instant::now();
-                if let Err(err) = SgFileMetadata::load_fully(dir.path(), &VecImageBuilderFactory) {
+                if let Err(err) = SgFile::load_fully(dir.path(), &VecImageBuilderFactory) {
                     println!("Failed to load: {err:?}");
                 };
                 let elapsed_time = start.elapsed();

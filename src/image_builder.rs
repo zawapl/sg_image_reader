@@ -81,24 +81,3 @@ impl ImageBuilder<Vec<u8>> for VecImageBuilder {
         self.pixels
     }
 }
-
-pub(crate) trait ImageBuilderHelper<T> {
-    fn set_555_pixel_by_pos(&mut self, position: usize, colour: u16);
-}
-
-impl<T, B: ImageBuilder<T>> ImageBuilderHelper<T> for B {
-    fn set_555_pixel_by_pos(&mut self, position: usize, colour: u16) {
-        if colour == 0xf81f {
-            return;
-        }
-
-        let ones = 0xf8_u8;
-        let r = (colour >> 7) as u8 & ones;
-        let g = (colour >> 2) as u8 & ones;
-        let b = (colour << 3) as u8 & ones;
-
-        let data = [r, g, b, 0xff];
-
-        self.set_pixel_by_pos(position, data);
-    }
-}

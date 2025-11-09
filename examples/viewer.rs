@@ -55,7 +55,7 @@ fn build_app() -> impl Widget<AppData> {
         |data: &AppData, _env| data.current_image,
         move |current_image, data: &AppData, _env| {
             Box::new(current_image.map_or_else(
-                || Scroll::new(Split::columns(Label::new(""), Label::new("")).split_point(0.5).draggable(false)).vertical(),
+                || Scroll::new(Split::columns(Label::new(""), Label::new("")).split_point(0.5).draggable(false)).content_must_fill(true).vertical(),
                 |image_id| {
                     if let Some(LoadedFile(file)) = &data.loaded_file {
                         let image = &file.images[image_id];
@@ -69,7 +69,7 @@ fn build_app() -> impl Widget<AppData> {
                             values.add_child(Label::new(value).expand_width());
                         };
 
-                        add_row("File", "".to_string());
+                        add_row("Image", "----------------".to_string());
                         add_row("image id", format!("{:?}", image.id));
                         add_row("offset", format!("{:?}", image.offset));
                         add_row("length", format!("{:?}", image.length));
@@ -93,7 +93,8 @@ fn build_app() -> impl Widget<AppData> {
                         add_row("unknown_d", format!("{:?}", image.unknown_d));
                         add_row("unknown_e", format!("{:?}", image.unknown_e));
                         add_row("unknown_f", format!("{:?}", image.unknown_f));
-                        add_row("Album", "".to_string());
+
+                        add_row("Album", "----------------".to_string());
                         add_row("album_id", format!("{:?}", album.id));
                         add_row("external_filename", format!("{:?}", album.external_filename));
                         add_row("comment", format!("{:?}", album.comment));
@@ -113,7 +114,8 @@ fn build_app() -> impl Widget<AppData> {
                         add_row("unknown_c", format!("{:?}", album.unknown_c));
                         add_row("unknown_d", format!("{:?}", album.unknown_d));
                         add_row("unknown_e", format!("{:?}", album.unknown_e));
-                        add_row("File", "".to_string());
+
+                        add_row("File", "----------------".to_string());
                         add_row("filename", format!("{:?}", file.filename));
                         add_row("file_size", format!("{:?}", file.file_size));
                         add_row("version", format!("{:?}", file.version));
@@ -124,7 +126,7 @@ fn build_app() -> impl Widget<AppData> {
                         add_row("file_size_555", format!("{:?}", file.file_size_555));
                         add_row("file_size_external", format!("{:?}", file.file_size_external));
 
-                        return Scroll::new(Split::columns(labels, values).split_point(0.5).draggable(false)).vertical();
+                        return Scroll::new(Split::columns(labels, values).split_point(0.5).draggable(false)).content_must_fill(true).vertical();
                     }
                     panic!("Image is selected, but no file is loaded!");
                 },
@@ -157,7 +159,7 @@ fn build_app() -> impl Widget<AppData> {
         },
     );
 
-    let right = Split::columns(image_preview, metadata).split_point(0.9).bar_size(5.0).draggable(true).min_size(10.0, 300.0);
+    let right = Split::columns(image_preview, metadata).split_point(0.9).bar_size(5.0).draggable(true).min_size(10.0, 400.0);
 
     Container::new(Split::columns(images, right).split_point(0.1).bar_size(5.0).draggable(true).min_size(200.0, 200.0))
 }
